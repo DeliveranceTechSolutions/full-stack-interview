@@ -1,3 +1,6 @@
+const BRANCH = 'Database';
+const contextLogger = require('../tools/Logger');
+
 let robotId = -1; 
 const CREATE = "create";
 const DELETE = "delete";
@@ -12,7 +15,9 @@ const client = new Client({
 });
 
 module.exports = {
-    updateRobot: (ctx, payload, flag) => {
+    updateRobot: (ctx, flag) => {
+        const payload = ctx[1].body
+        
         try {
             client.connect(function (err) {
                 if (err)
@@ -41,7 +46,7 @@ module.exports = {
             }
             client.end();
         } catch (error) {
-            contextLoggerFailure(ctx, error)
+            this.contextLogger.failure(ctx, branch, error)
         }
     },
     modifyRobot: (ctx, payload, flag, robot_id) => {
@@ -69,7 +74,7 @@ module.exports = {
         return;
     },
 
-    indexRobots:(ctx) => {
+    indexRobots: ctx => {
         try {
             client.connect(function (err) {
                 if (err)
@@ -81,23 +86,26 @@ module.exports = {
                 ON (robots.owner_id = users.id);
             `);
             client.end();
+
+
         } catch (error) {
 
         }
     },
 
-    updateUser: (ctx, logger, payload, flag) => {
+    updateUser: (ctx, flag) => {
         try {
             if(flag === CREATE) {
                 const queryString = `INSERT INTO users VALUES (${payload.user_name}, ${payload.password}, ${payload.user_id})`
             } else if(flag === DELETE) {
                 const queryString = `DELETE FROM users WHERE ${users.user_id} = ${payload.user_id}`
             } else if(flag === UPDATE) {
-                const queryString = `UPDATE users SET (
-                    username = ${payload.user_name},
+                const queryString = `
+                UPDATE users 
+                SET (username = ${payload.user_name},
                     password = ${payload.password},
-                    user_id = ${payload.user_id}
-                ) WHERE user_id=${user_id};`
+                    user_id = ${payload.user_id}) 
+                WHERE user_id=${user_id};`
             }
             client.connect(function (err) {
                 if (err)
@@ -110,34 +118,23 @@ module.exports = {
         }
     },
 
-    getRobotIdWithName: (ctx, robot_name) => {
+    getRobotIdWithName: ctx => {
+        const my = ctx.wReq.body
         try {
-            const robot = client.query(`SELECT robot_id FROM robots WHERE robot_name=${robot_name}`);
+            const robot = client.query(`SELECT robot_id FROM robots WHERE robot_name=${my.robot_name}`);
 
         } catch (error) {
             
         }
     },
-    getRobotByID: (ctx, robot_id) => {
+    getRobotByID: ctx => {
+        const my = ctx.wReq.body
         try {
-            robot = client.query(`SELECT * FROM robots WHERE robot_id=${robot_id}`);
-            this.contextLoggerSuccess(ctx, robot)
+            robot = client.query(`SELECT * FROM robots WHERE robot_id=${my.robot_id}`);
+            contextLogger.success(ctx, robot)
         } catch (error) {
 
         }
     },
-    contextLoggerSuccess: (ctx, msg) => {
-        const logger = ctx[0];
-        logger(ctx[1], ctx[2], () => msg);
-    },
-    contextLoggerFailure: (ctx, err) => {
-        const logger = ctx[0];
-        logger(ctx[1], ctx[2], () => {
-          res.send(`
-            Error: 
-              Networking: 
-                Route /create_user: 
-                  ${err}`)
-        });
-    },
+    
 }

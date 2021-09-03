@@ -5,12 +5,12 @@ var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 var logger = morgan('combined');
 var indexRouter = require('./routes/index');
-var createRobot = require('../middleware/index');
-var getAllRobots = require('../middleware/index');
-var getRobotByID = require('../middleware/index');
-var modifyRobot = require('../middleware/index');
-var deleteRobot = require('../middleware/index');
-var results = require('../middleware/index');
+var createRobot = require('../service/index');
+var getAllRobots = require('../service/index');
+var getRobotByID = require('../service/index');
+var modifyRobot = require('../service/index');
+var deleteRobot = require('../service/index');
+var results = require('../service/index');
 
 var app = express();
 
@@ -33,6 +33,8 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 
+app.set('view engine', 'react')
+
 // error handler
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
@@ -42,6 +44,7 @@ app.use(function (err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render('error');
-});
+}); 
+
 
 module.exports = app;
