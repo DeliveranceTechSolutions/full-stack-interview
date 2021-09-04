@@ -1,5 +1,5 @@
 module.exports = {
-    success: (ctx, arg, msg) => {
+    success: (ctx, arg) => {
         const logger = ctx.wLogger;
         const res = ctx.wRes;
         logger(
@@ -14,7 +14,7 @@ module.exports = {
         const logger = ctx.wLogger;
         const route = ctx.wReq.body.originalUrl
         logger(ctx.wReq, ctx.wRes, () => {
-            res.send(`
+            ctx.wRes.send(`
                 Error: 
                 ${branch}: 
                 Route ${route}: 

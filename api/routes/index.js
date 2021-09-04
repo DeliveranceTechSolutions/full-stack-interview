@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-const BRANCH = "routing";
+const branch = "Routing";
 
 var robotModel = {}
 const ser = require('../../service');
@@ -14,54 +14,52 @@ router.get('/', function (req, res, next) {
 
 router.post('/create_robot', function (req, res, next) {
   const ctx = contextCreator(logger, req, res);
-  try{
-    robotModel.username = req.body.username;
-    robotModel.robot_name = req.body.robot_name;
-    robotModel.robot_id = req.body.robot_id;
+  const success = "Robot created successfully!";
+  try {  
     ser.createRobot(ctx);
     contextLogger.success(
-      ctx, 
-      res.send("robot created successfully!")
+      ctx,
+      success,
     );
   } catch (error) {
     contextLogger.failure(
       ctx, 
-      '/create_robot', 
+      branch, 
       error
-    ); 
+    );
   }
 });
 
 router.post('/delete_robot', function (req, res, next) {
   const ctx = contextCreator(logger, req, res);
+  const success = `${req.body.robot_name} has been deleted.`
   try {
     ser.deleteRobot(ctx);
     contextLogger.success(
       ctx, 
-      res.send(`${req.body.robot_name} has been deleted.`)
+      success,
     );
   } catch (error) {
     contextLogger.failure(
       ctx, 
-      '/delete_robot', 
+      branch, 
       error
-    );  
+    ); 
   }
 });
 
 router.post('/modify_robot', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
-  try{
-    const modifiedRobot = s.modifyRobot(ctx);
-    res.send(modifiedRobot);
+  try {
+    const modifiedRobot = ser.modifyRobot(ctx);
     contextLogger.success(
-      ctx, 
-      res.send(modifiedRobot)
+      ctx,
+      modifiedRobot, 
     )
   } catch (error) {
     contextLogger.failure(
       ctx, 
-      '/modify_robot', 
+      branch, 
       error
     );  
   }
@@ -70,15 +68,15 @@ router.post('/modify_robot', function(req, res, next) {
 router.get('/get_all_robots', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
   try {
-    const robots = s.getAllRobots(ctx);
-    contextLoggerSuccess(
-      ctx, 
-      res.send(robots)
+    const robots = ser.getAllRobots(ctx);
+    contextLogger.success(
+      ctx,
+      robots, 
     );
   } catch (error) {
-    contextLoggerFailure(
+    contextLogger.failure(
       ctx, 
-      '/get_all_robots', 
+      branch, 
       error
     );   
   }
@@ -86,7 +84,7 @@ router.get('/get_all_robots', function(req, res, next) {
 
 router.get('/get_robot_by_id/{id}', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
-  try{
+  try {
     let robot = undefined;
     let robot_id = undefined;
 
@@ -96,33 +94,31 @@ router.get('/get_robot_by_id/{id}', function(req, res, next) {
     } else {
       robot_id = s.getRobotByID(ctx);
     }
-
-    contextLoggerSuccess(
-      ctx, 
-      res.send(robot_id)
+    contextLogger.success(
+      ctx,
+      robot_id, 
     );
   } catch (error) {
-    contextLoggerFailure(
+    contextLogger.failure(
       ctx, 
-      '/get_robot_by_id/{id}', 
+      branch, 
       error
-    );  
+    );
   }
 });
 
 router.get('/get_robot_by_name', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
   try {
-    const robot = s.getRobotByName(ctx, logger, req.body.robot_name);
+    const robot = ser.getRobotByName(ctx, logger, req.body.robot_name);
     contextLogger.success(
       ctx,
       robot,
-      res.send
     );
   } catch (error) {
     contextLogger.failure(
       ctx, 
-      '/get_robot_by_name', 
+      branch, 
       error
     );
   }
@@ -131,36 +127,21 @@ router.get('/get_robot_by_name', function(req, res, next) {
 router.post('/create_user', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
   try {
-    const user = s.createUser(ctx, logger, req.body);
-    return contextLogge.success(
+    const user = ser.createUser(ctx);
+    const success = "User created successfully!";
+    contextLogger.success(
       ctx,
-      undefined, 
-      res.send("User created successfully!")
+      success
     );
   } catch (error) {
-    return contextLogger.failure(
+    contextLogger.failure(
       ctx, 
-      '/create_user', 
+      branch, 
       error
     );
   } 
 });
 
-const contextLoggerSuccess = (ctx, arg, msg) => {
-  const logger = ctx.wLogger;
-  logger(ctx.wReq, ctx.wRes, () => msg);
-}
-
-const contextLoggerFailure = (ctx, route, err) => {
-  const logger = ctx.wLogger;
-  logger(ctx.wRes, ctx.wReq, () => {
-    res.send(`
-      Error: 
-        ${branch}: 
-          Route ${route}: 
-            ${err}`)
-  });
-}
 
 const contextCreator = (logger, req, res) => {
   return Object.freeze({wLogger: logger, wReq: req, wRes: res});

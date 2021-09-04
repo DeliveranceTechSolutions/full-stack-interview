@@ -1,58 +1,55 @@
-const BRANCH = 'Database';
+const branch = 'Database';
 const contextLogger = require('../tools/Logger');
+const flag = require('../constants/index');
 
 let robotId = -1; 
-const CREATE = "create";
-const DELETE = "delete";
-
 const { Client } = require('pg');
 const client = new Client({
     user: 'roboenthusiast324',
     host: 'localhost',
-    database: 'robot_collector',
+    database: 'robots',
     password: 'robots',
     port: 5432,
 });
 
+
 module.exports = {
-    updateRobot: (ctx, flag) => {
-        const payload = ctx[1].body
-        
+    updateRobot: (ctx, subflag) => {
+        const my = Object.freeze(ctx.wReq.body);        
         try {
             client.connect(function (err) {
-                if (err)
-                    throw err;
+                if (err)throw err;
             });
-            if (flag === CREATE) {
+            if (subflag === flag.CREATE) {
                 client.query(`
-                    INSERT INTO robot_collector 
+                    INSERT INTO robots 
                     VALUES (
-                        ${payload.robot_id},
-                        ${payload.user_name},
-                        ${payload.robot_name}, 
-                        ${payload.color}, 
-                        ${payload.attack}, 
-                        ${payload.defense}
+                        ${my.robot_id},
+                        ${my.user_name},
+                        ${my.robot_name}, 
+                        ${my.color}, 
+                        ${my.attack}, 
+                        ${my.defense}
                     );
                 `);
             }
-            else if (flag === DELETE) {
+            else if (subflag === flag.DELETE) {
                 client.query(`
-                    DELETE FROM robot_collector 
-                    WHERE robot_id = ${payload.robot_id} 
+                    DELETE FROM robots
+                    WHERE robot_id = ${my.robot_id} 
                 `);
             } else {
                 return console.error("undefined string in updateRobot");
             }
             client.end();
         } catch (error) {
-            this.contextLogger.failure(ctx, branch, error)
+            contextLogger.failure(ctx, branch, error)
         }
     },
-    modifyRobot: (ctx, payload, flag, robot_id) => {
+    modifyRobot: ctx => {
+        const my = Object.freeze(ctx.wReq.body);
         client.connect(function (err) {
-            if (err)
-                throw err;
+            if (err)throw err;
         });
 
         // Retrieving robot's id
@@ -62,79 +59,119 @@ module.exports = {
             robotId = getRobotIdWithName(robot_name);
 
         client.query(`
-            UPDATE robot_collector 
+            UPDATE robots 
             SET (robot_id = ${robotId},
-                username = ${payload.user_name},
-                robot_name = ${payload.robot_name}, 
-                color = ${payload.color}, 
-                attack = ${payload.attack}, 
-                defense = ${payload.defense}) 
-            WHERE robot_id=${robotId};`);
+                username = ${my.user_name},
+                robot_name = ${my.robot_name}, 
+                color = ${my.color}, 
+                attack = ${my.attack}, 
+                defense = ${my.defense}) 
+            WHERE robot_id=${robotId}`);
         client.end();
         return;
     },
-
     indexRobots: ctx => {
         try {
             client.connect(function (err) {
-                if (err)
-                    throw err;
+                if (err) throw err;
             });
-            client.query(`
+            robots = client.query(`
                 SELECT * FROM robots 
                 INNER JOIN users 
-                ON (robots.owner_id = users.id);
+                ON (robots.owner_id = users.id)
             `);
             client.end();
-
-
+            contextLogger.success(
+                ctx,
+                robots
+            )
         } catch (error) {
-
+            contextLogger.failure(
+                ctx, 
+                branch, 
+                error
+            );
         }
     },
-
     updateUser: (ctx, flag) => {
+        const my = Object.freeze(ctx.wReq.body);
+        const success = "User was either created or updated successfully!"
+
         try {
-            if(flag === CREATE) {
-                const queryString = `INSERT INTO users VALUES (${payload.user_name}, ${payload.password}, ${payload.user_id})`
-            } else if(flag === DELETE) {
-                const queryString = `DELETE FROM users WHERE ${users.user_id} = ${payload.user_id}`
-            } else if(flag === UPDATE) {
-                const queryString = `
-                UPDATE users 
-                SET (username = ${payload.user_name},
-                    password = ${payload.password},
-                    user_id = ${payload.user_id}) 
-                WHERE user_id=${user_id};`
-            }
+            const queryString = Object.freeze(queryStringCreator(ctx, flag));
             client.connect(function (err) {
-                if (err)
-                    throw err;
+                if (err) throw err;
             });
             client.query(queryString);
             client.end();
+            contextLogger.success(
+                ctx,
+                success
+            );
         } catch (error) {
-            console.error(error);
+            contextLogger.failure(
+                ctx,
+                branch,
+                error
+            )
         }
     },
-
     getRobotIdWithName: ctx => {
         const my = ctx.wReq.body
         try {
-            const robot = client.query(`SELECT robot_id FROM robots WHERE robot_name=${my.robot_name}`);
-
+            const robot = client.query(`
+                SELECT robot_id 
+                FROM robots 
+                WHERE robot_name=${my.robot_name}`
+            );
         } catch (error) {
-            
+            contextLogger.failure(
+                ctx,
+                branch,
+                error
+            ) 
         }
     },
     getRobotByID: ctx => {
         const my = ctx.wReq.body
         try {
-            robot = client.query(`SELECT * FROM robots WHERE robot_id=${my.robot_id}`);
-            contextLogger.success(ctx, robot)
+            robot = client.query(`
+                SELECT * 
+                FROM robots 
+                WHERE robot_id=${my.robot_id}`
+            );
+            contextLogger.success(
+                ctx, 
+                robot
+            )
         } catch (error) {
-
+            contextLogger.failure(
+                ctx,
+                branch,
+                error
+            )
         }
-    },
-    
+    }, 
+}
+const queryStringCreator = (ctx, flag) => {
+    let queryString = undefined;
+    const my = ctx.wReq.body
+    if(flag === CREATE) {
+        queryString = `
+        INSERT INTO 
+        users VALUES (${my.user_name}, ${my.password}, ${my.user_id})`
+    } else if(flag === DELETE) {
+        queryString = `
+        DELETE FROM users 
+        WHERE user_id = ${my.user_id}`
+    } else if(flag === UPDATE) {
+        queryString = `
+        UPDATE users 
+        SET (username = ${my.user_name},
+            password = ${my.password},
+            user_id = ${my.user_id}) 
+        WHERE user_id=${my.user_id}`
+    }
+
+    return queryString;
 }
