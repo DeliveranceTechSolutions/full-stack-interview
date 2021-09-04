@@ -11,12 +11,11 @@ function App() {
   useEffect(() => {
     axios({
       method: 'get',
-      url: 'http://0.0.0.0:3001/get_all_robots',
+      url: 'http://127.0.0.1:3001/api/get_all_robots',
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Content-type': 'application/json',
+        'Content-type': 'application/x-www-urlencoded',
       },
-      data: {}
     })
     .then((response) => {
       console.log('success', response);
@@ -24,6 +23,7 @@ function App() {
     })
     .catch((error) => {
       console.log('failure', error);
+      changePayload(error)
     });    
   }, [payload])
 
