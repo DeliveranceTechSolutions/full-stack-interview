@@ -1,15 +1,17 @@
 var express = require('express');
 var router = express.Router();
+var morgan = require('morgan');
+var logger = morgan('combined');
 
 const branch = "Routing";
 
 var robotModel = {}
-const ser = require('../../service');
+const ser = require('../../service/index');
 const contextLogger = require('../../tools/Logger');
 
 router.get('/', function (req, res, next) {
   const ctx = contextCreator(logger, req, res);
-  res.send(s.getAllRobots(ctx));
+  res.send(ser.getAllRobots(ctx));
 });
 
 router.post('/create_robot', function (req, res, next) {
@@ -34,7 +36,7 @@ router.post('/delete_robot', function (req, res, next) {
   const ctx = contextCreator(logger, req, res);
   const success = `${req.body.robot_name} has been deleted.`
   try {
-    ser.deleteRobot(ctx);
+    ser.deleteRobot()
     contextLogger.success(
       ctx, 
       success,
@@ -89,10 +91,10 @@ router.get('/get_robot_by_id/{id}', function(req, res, next) {
     let robot_id = undefined;
 
     if(req.body.robot_id === -1) {
-      robot = s.getRobotByName(ctx);
-      robot_id = s.getRobotByID(ctx);
+      robot = ser.getRobotIdWithName(ctx);
+      robot_id = ser.getRobotByID(ctx);
     } else {
-      robot_id = s.getRobotByID(ctx);
+      robot_id = ser.getRobotByID(ctx);
     }
     contextLogger.success(
       ctx,
@@ -110,7 +112,7 @@ router.get('/get_robot_by_id/{id}', function(req, res, next) {
 router.get('/get_robot_by_name', function(req, res, next) {
   const ctx = contextCreator(logger, req, res);
   try {
-    const robot = ser.getRobotByName(ctx, logger, req.body.robot_name);
+    const robot = ser.getRobotIdWithName(ctx, logger, req.body.robot_name);
     contextLogger.success(
       ctx,
       robot,

@@ -2,7 +2,7 @@ const branch = 'Database';
 const contextLogger = require('../tools/Logger');
 const flag = require('../constants/index');
 
-let robotId = -1; 
+
 const { Client } = require('pg');
 const client = new Client({
     user: 'roboenthusiast324',
@@ -12,7 +12,6 @@ const client = new Client({
     port: 5432,
 });
 
-
 module.exports = {
     updateRobot: (ctx, subflag) => {
         const my = Object.freeze(ctx.wReq.body);        
@@ -20,7 +19,7 @@ module.exports = {
             client.connect(function (err) {
                 if (err)throw err;
             });
-            if (subflag === flag.CREATE) {
+            if (subflag === flag.CREATE()) {
                 client.query(`
                     INSERT INTO robots 
                     VALUES (
@@ -33,7 +32,7 @@ module.exports = {
                     );
                 `);
             }
-            else if (subflag === flag.DELETE) {
+            else if (subflag === flag.DELETE()) {
                 client.query(`
                     DELETE FROM robots
                     WHERE robot_id = ${my.robot_id} 
@@ -47,18 +46,23 @@ module.exports = {
         }
     },
     modifyRobot: ctx => {
-        const my = Object.freeze(ctx.wReq.body);
-        client.connect(function (err) {
-            if (err)throw err;
-        });
+        try {
+            let robotId = -1;
+            let robot = {}
+            const my = Object.freeze(ctx.wReq.body);
+            client.connect(function (err) {
+                if (err)throw err;
+            });
 
-        // Retrieving robot's id
-        if (robot_id !== null && robot_id !== undefined)
-            robotId = getRobotByID(robot_id);
-        else
-            robotId = getRobotIdWithName(robot_name);
+            // Retrieving robot's id
+            if (my.robot_id !== null && my.robot_id !== undefined) {
+                robot = this.getRobotByID(my.robot_id);
+            } else {
+                robotId = this.getRobotIdWithName(my.robot_name);
+                robot = this.getRobotByID(robotId);
+            }
 
-        client.query(`
+            client.query(`
             UPDATE robots 
             SET (robot_id = ${robotId},
                 username = ${my.user_name},
@@ -67,10 +71,22 @@ module.exports = {
                 attack = ${my.attack}, 
                 defense = ${my.defense}) 
             WHERE robot_id=${robotId}`);
-        client.end();
-        return;
+            client.end();
+            contextLogger.success(
+                ctx,
+                robot
+            )
+        } catch (error) {
+            contextLogger.failure(
+                ctx,
+                branch,
+                error
+            );
+        }
+
     },
     indexRobots: ctx => {
+        let robots;
         try {
             client.connect(function (err) {
                 if (err) throw err;
@@ -87,8 +103,8 @@ module.exports = {
             )
         } catch (error) {
             contextLogger.failure(
-                ctx, 
-                branch, 
+                ctx,
+                branch,
                 error
             );
         }
@@ -118,12 +134,17 @@ module.exports = {
     },
     getRobotIdWithName: ctx => {
         const my = ctx.wReq.body
+
         try {
             const robot = client.query(`
                 SELECT robot_id 
                 FROM robots 
                 WHERE robot_name=${my.robot_name}`
             );
+            contextLogger.success(
+                ctx,
+                robot
+            )
         } catch (error) {
             contextLogger.failure(
                 ctx,
@@ -134,14 +155,15 @@ module.exports = {
     },
     getRobotByID: ctx => {
         const my = ctx.wReq.body
+
         try {
-            robot = client.query(`
+            const robot = client.query(`
                 SELECT * 
                 FROM robots 
                 WHERE robot_id=${my.robot_id}`
             );
             contextLogger.success(
-                ctx, 
+                ctx,
                 robot
             )
         } catch (error) {
@@ -153,18 +175,18 @@ module.exports = {
         }
     }, 
 }
-const queryStringCreator = (ctx, flag) => {
+const queryStringCreator = (ctx, queryflag) => {
     let queryString = undefined;
     const my = ctx.wReq.body
-    if(flag === CREATE) {
+    if(queryflag === flag.CREATE()) {
         queryString = `
         INSERT INTO 
         users VALUES (${my.user_name}, ${my.password}, ${my.user_id})`
-    } else if(flag === DELETE) {
+    } else if(queryflag === flag.DELETE()) {
         queryString = `
         DELETE FROM users 
         WHERE user_id = ${my.user_id}`
-    } else if(flag === UPDATE) {
+    } else if(queryflag === flag.UPDATE()) {
         queryString = `
         UPDATE users 
         SET (username = ${my.user_name},

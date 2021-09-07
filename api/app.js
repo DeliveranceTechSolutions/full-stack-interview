@@ -5,6 +5,8 @@ var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 var logger = morgan('combined');
 
+var ser = require('../service/index');
+
 var createRobot = require('../service/index');
 var getAllRobots = require('../service/index');
 var getRobotByID = require('../service/index');
@@ -21,12 +23,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/create_robot',  createRobot, logger);
-app.use('/get_all_robots', getAllRobots, logger);
-app.use('/get_robot_by_id/{id}', getRobotByID, logger);
-app.use('/modify_robot', modifyRobot, logger);
-app.use('/delete_robot/{id}', deleteRobot, logger);
-app.use('/results', results, logger);
+app.use("/", ser.getAllRobots);
+app.use("/create_robot",  ser.createRobot);
+app.use('/get_all_robots', ser.getAllRobots);
+app.use('/get_robot_by_id/{id}', ser.getRobotByID);
+app.use('/modify_robot', ser.modifyRobot);
+app.use('/delete_robot/{id}', ser.deleteRobot);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
@@ -35,7 +37,7 @@ app.use(function (req, res, next) {
 app.use(function (req, res, next) {
 
   // Website you wish to allow to connect
-  res.setHeader('Access-Control-Allow-Origin', 'http://192.168.1.2');
+  res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1');
 
   // Request methods you wish to allow
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
